@@ -1,0 +1,168 @@
+# FFT/IFFT 32x32 靜態庫開發實驗步驟
+日期: 2025年4月8日
+
+## 1. 改進概要
+1. 採用原始程式（fftifft_32_32_test_other_signal1.c）的精確實現
+2. 將功能模組化為靜態庫
+3. 支援9種波形測試
+4. 添加自動化測試報告生成
+
+## 2. 檔案結構
+```
+fft_32_32_build_lib/
+├── include/
+│   └── fft_wrapper.h    # 庫的公共介面
+├── src/
+│   ├── fft_wrapper.c    # 核心實現
+│   └── main.c          # 測試程式
+├── lib/
+│   └── libfft_wrapper.a # 編譯後的靜態庫
+└── test/               # 測試輸出
+```
+
+## 3. 環境設置
+```bash
+export XTENSA_SYSTEM=/home/yu-chen/xtensa/XtDevTools/install/tools/RI-2021.6-linux/XtensaTools/config
+export XTENSA_BASE=/home/yu-chen/xtensa/XtDevTools/install
+export XTENSA_CORE=hifi4_ss_spfpu_7
+```
+
+## 4. 改進內容
+
+### 4.1 波形生成優化
+- 統一使用 double 提高中間計算精度
+- 為不同波形設置合適的預縮放因子
+- 添加參數範圍檢查
+
+### 4.2 Q31轉換改進
+- 使用 double 進行中間轉換避免精度損失
+- 添加邊界檢查和飽和處理
+- 改進縮放係數計算
+
+### 4.3 FFT/IFFT處理改進
+- 採用非原位運算避免數據污染
+- 正確處理FFT和IFFT的移位累積
+- 改進最終結果的縮放計算
+
+### 4.4 測試功能增強
+- 支援9種不同波形類型完整測試
+- 添加自動化測試報告生成
+- 波形預覽改進，添加數值顯示
+
+## 5. 編譯和運行步驟
+
+### 5.1 清理舊檔案
+```bash
+make clean
+```
+
+### 5.2 編譯靜態庫
+```bash
+make all
+```
+
+### 5.3 運行測試
+```bash
+make test
+```
+
+## 6. 已知問題及解決方案
+
+### 6.1 誤差控制
+- 問題：某些波形（如AM信號）的誤差較大
+- 解決：調整預縮放因子和FFT縮放選項
+
+### 6.2 飽和處理
+- 問題：特定波形可能導致Q31飽和
+- 解決：實現自適應預縮放
+
+### 6.3 效能優化
+- 使用記憶體對齊優化存取效率
+- 避免重複記憶體分配
+
+## 7. 使用說明
+
+### 7.1 基本使用
+```c
+#include "fft_wrapper.h"
+
+// 初始化配置
+fft_config_t config = {
+    .prescale_factor = 0.025f,
+    .scaling_option = 3,
+    .tolerance = 0.02f
+};
+
+// 生成信號
+float buffer[FFT_N];
+generate_test_signal(buffer, WAVEFORM_DUAL_SINE, config.prescale_factor);
+
+// 執行FFT/IFFT
+int32_t fft_output[2*FFT_N];
+float recovered[FFT_N];
+int fft_shifts, ifft_shifts;
+
+perform_fft_32_32(buffer, fft_output, &fft_shifts, config.scaling_option);
+perform_ifft_32_32(fft_output, recovered, fft_shifts, &ifft_shifts, config.scaling_option);
+```
+
+### 7.2 波形類型
+1. WAVEFORM_DUAL_SINE: 雙正弦波
+2. WAVEFORM_SINGLE_COSINE: 單餘弦波
+3. WAVEFORM_SQUARE: 方波
+4. WAVEFORM_IMPULSE: 衝激函數
+5. WAVEFORM_AM: AM調變信號
+6. WAVEFORM_FM: 窄帶FM信號
+7. WAVEFORM_CHIRP: 線性掃頻信號
+8. WAVEFORM_GAUSSIAN: 高斯脈衝
+9. WAVEFORM_WHITE_NOISE: 白噪聲
+
+## 8. 未來改進計劃
+1. 實現自適應預縮放算法
+2. 添加並行處理支援
+3. 擴展支援其他FFT長度
+4. 添加頻譜分析功能
+5. 改進錯誤處理機制
+
+=== 2025/04/08 靜態庫測試添加 ===
+
+1. 新增靜態庫測試功能
+   - 在 fft_wrapper.h 中添加靜態庫測試結構體和函數聲明
+   - 在 fft_wrapper.c 中實現靜態庫測試函數
+   - 在 main.c 中添加靜態庫測試執行部分
+
+2. 靜態庫測試項目包含：
+   - FFT句柄可用性測試
+   - IFFT句柄可用性測試
+   - 基本FFT運算測試
+   - Q31轉換精度測試
+
+3. 編譯指令：
+```
+export XTENSA_SYSTEM=/home/yu-chen/xtensa/XtDevTools/install/tools/RI-2021.6-linux/XtensaTools/config
+export XTENSA_BASE=/home/yu-chen/xtensa/XtDevTools/install
+export XTENSA_CORE=hifi4_ss_spfpu_7
+
+xt-clang fftifft_32_32_test_other_signal1.c \
+    -o fftifft_test_program_nature_q15 \
+    -I/home/yu-chen/下載/HiFi4_VFPU_Library_v4_1_0/hifi4_library/include \
+    -L. \
+    -lAll_fft_NatureDSP_Signal-hifi4_ss_spfpu_7_llvm-Xtensa-release \
+    -lm
+```
+
+4. 執行指令：
+```
+xt-run fftifft_test_program_nature_q15
+```
+
+5. 問題記錄：
+   - 需要確保靜態庫正確連結
+   - 確認測試結果的準確性
+   - 驗證錯誤處理機制
+
+6. 後續工作：
+   - 考慮添加更多靜態庫功能測試
+   - 優化測試報告格式
+   - 添加性能測試項目
+

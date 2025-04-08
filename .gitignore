@@ -1,0 +1,33 @@
+# Build files
+*.o
+*.a
+*.out
+test_fft
+fftifft_test_program_*
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*~
+
+# Generated test reports
+test_report_*.txt
+test_results_*.txt
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Debug files
+*.dSYM/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

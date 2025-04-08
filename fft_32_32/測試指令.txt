@@ -1,0 +1,10 @@
+export XTENSA_SYSTEM=/home/yu-chen/xtensa/XtDevTools/install/tools/RI-2021.6-linux/XtensaTools/config
+export XTENSA_BASE=/home/yu-chen/xtensa/XtDevTools/install
+export  XTENSA_CORE=hifi4_ss_spfpu_7
+
+xt-clang fftifft_32_32_test_other_signal1.c     -o fftifft_test_program_nature_q15     -I/home/yu-chen/下載/HiFi4_VFPU_Library_v4_1_0/hifi4_library/include     -L.     -lAll_fft_NatureDSP_Signal-hifi4_ss_spfpu_7_llvm-Xtensa-release     -lm
+
+xt-run fftifft_test_program_nature_q15
+
+
+xt-nm -g libAll_fft_NatureDSP_Signal-hifi4_ss_spfpu_7_llvm-Xtensa-release.a | grep ' T '
